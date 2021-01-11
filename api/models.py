@@ -4,11 +4,17 @@ from django.db import models
 # Create your models here.
 
 class Year(models.Model):
-    start_year = models.PositiveSmallIntegerField()
+    start_year = models.PositiveSmallIntegerField(unique=True)
+
+    def __str__(self):
+        return f"{self.start_year}"
 
 class FieldOfStudy(models.Model):
     year = models.ForeignKey(Year,on_delete=models.CASCADE)
     name = models.CharField(max_length=50)
+
+    def __str__(self):
+        return f"{self.year} {self.name}"
 
 class Subject(models.Model):
     field_of_study = models.ForeignKey(FieldOfStudy,on_delete=models.CASCADE)
@@ -19,11 +25,17 @@ class Subject(models.Model):
     start_time = models.DateTimeField()
     end_time = models.DateTimeField()
 
+    def __str__(self):
+        return f"{self.name} {self.start_time}:{self.end_time}"
+
 class User(AbstractUser):
     groups = models.ForeignKey(Group, on_delete=models.CASCADE)
     email = models.EmailField(max_length=50, unique=True)
 
     REQUIRED_FIELDS = ['groups_id', 'email']
+
+    def __str__(self):
+        return self.username
 
 class Student(models.Model):
     field_of_study = models.ForeignKey(FieldOfStudy,on_delete=models.CASCADE)
@@ -35,8 +47,11 @@ class Student(models.Model):
             models.UniqueConstraint(fields=['field_of_study', 'user'], name='unique_student')
         ]
 
+    def __str__(self):
+        return f"{self.user} {self.field_of_study}"
+
 class SubjectGroup(models.Model):
-    subject=models.ForeignKey(Subject,on_delete=models.CASCADE)
+    subject=models.ForeignKey(Subject,related_name='subject_group',on_delete=models.CASCADE)
     student = models.ForeignKey(Student,on_delete=models.CASCADE)
 
     class Meta:
@@ -44,6 +59,14 @@ class SubjectGroup(models.Model):
         constraints = [
             models.UniqueConstraint(fields=['subject', 'student'], name='unique_subject_group')
         ]
+
+    def save(self,*args,**kwargs):
+        if self.student.field_of_study != self.subject.field_of_study :
+            raise Exception("Student can't belong to the group outside of his field of study")
+        super(SubjectGroup, self).save(*args,**kwargs)
+
+    def __str__(self):
+        return  f"{self.subject} {self.student}"
 
 class Points(models.Model):
     subject=models.ForeignKey(Subject,on_delete=models.CASCADE)
@@ -55,6 +78,14 @@ class Points(models.Model):
         constraints = [
             models.UniqueConstraint(fields=['subject', 'student'], name='unique_points')
         ]
+
+    def save(self,*args,**kwargs):
+        if self.student.field_of_study != self.subject.field_of_study :
+            raise Exception("Student can't assign points to the subject outside of his field of study")
+        super(Points, self).save(*args,**kwargs)
+
+    def __str__(self):
+        return  f"{self.subject} {self.student}"
 
 class Application(models.Model):
     unwanted_subject=models.ForeignKey(Subject,on_delete=models.CASCADE,related_name="unwanted_subject")
@@ -68,3 +99,11 @@ class Application(models.Model):
         constraints = [
             models.UniqueConstraint(fields=['unwanted_subject', 'wanted_subject','student'], name='unique_application')
         ]
+
+    def save(self,*args,**kwargs):
+        if self.student.field_of_study != self.unwanted_subject.field_of_study or self.student.field_of_study != self.wanted_subject.field_of_study:
+            raise Exception("Student can't make application with subject outside of his field of study")
+        super(Application, self).save(*args,**kwargs)
+
+    def __str__(self):
+        return  f"{self.unwanted_subject}->{self.wanted_subject} {self.student}"
