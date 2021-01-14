@@ -2,12 +2,25 @@ from django.contrib.auth.models import AbstractUser, Group
 from django.db import models
 
 # Create your models here.
+class University(models.Model):
+    name = models.CharField(max_length=100,unique=True)
+
+    def __str__(self):
+        return self.name
+
+class Department(models.Model):
+    university = models.ForeignKey(University,on_delete=models.CASCADE)
+    name = models.CharField(max_length=50)
+
+    def __str__(self):
+        return f"{self.university} {self.name}"
 
 class Year(models.Model):
+    department = models.ForeignKey(Department,on_delete=models.CASCADE)
     start_year = models.PositiveSmallIntegerField(unique=True)
 
     def __str__(self):
-        return f"{self.start_year}"
+        return f"{self.department} {self.start_year}"
 
 class FieldOfStudy(models.Model):
     year = models.ForeignKey(Year,on_delete=models.CASCADE)
@@ -31,8 +44,10 @@ class Subject(models.Model):
 class User(AbstractUser):
     groups = models.ForeignKey(Group, on_delete=models.CASCADE)
     email = models.EmailField(max_length=50, unique=True)
+    university=models.ForeignKey(University,on_delete=models.CASCADE)
+    department=models.ForeignKey(Department,on_delete=models.CASCADE,null=True)
 
-    REQUIRED_FIELDS = ['groups_id', 'email']
+    REQUIRED_FIELDS = ['groups_id', 'email','university']
 
     def __str__(self):
         return self.username

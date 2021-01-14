@@ -35,11 +35,17 @@ INSTALLED_APPS = [
     'django.contrib.sessions',
     'django.contrib.messages',
     'django.contrib.staticfiles',
+    'django.contrib.sites',
 
     # Third party
     'rest_framework',
     'rest_framework.authtoken',
+    'allauth',
+    'allauth.account',
+    'allauth.socialaccount',
     'rest_auth',
+    'rest_auth.registration',
+
 
     # Local
     'api.apps.ApiConfig',
@@ -84,7 +90,7 @@ WSGI_APPLICATION = 'SignMeUpAPI.wsgi.application'
 DATABASES = {
     'default': {
         'ENGINE': 'django.db.backends.postgresql',
-        'NAME': 'SignMeUp',
+        'NAME': 'SignMeUpDB',
         'USER': 'postgres',
         'PASSWORD': 'Klara1374#',
         'HOST': '127.0.0.1',
@@ -133,3 +139,11 @@ REST_FRAMEWORK = {
         'rest_framework.authentication.TokenAuthentication',
     ],
 }
+
+ACCOUNT_ADAPTER = 'api.adapters.UniversityAdminAccountAdapter'
+
+EMAIL_BACKEND = 'django.core.mail.backends.console.EmailBackend'
+REST_AUTH_SERIALIZERS = {
+    'TOKEN_SERIALIZER': 'api.serializers.TokenSerializer',
+}
+SITE_ID = 1

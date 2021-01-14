@@ -1,24 +1,44 @@
+from django.conf.urls import url
 from django.urls import path, include
-from rest_framework.routers import SimpleRouter
+from patterns import patterns
+from rest_framework.routers import SimpleRouter, DefaultRouter
 from rest_framework_extensions.routers import NestedRouterMixin
+from rest_framework_nested.routers import NestedSimpleRouter
 
 from api.views import YearViewSet, FieldOfStudyViewSet, SubjectViewSet, StudentViewSet, PointsViewSet, \
-    ApplicationViewSet, UserViewSet
+    ApplicationViewSet, DepartmentViewSet, UserViewSet, \
+    SubjectGroupViewSet, UniversityViewSet
 
+router = DefaultRouter()
 
-class NestedSimpleRouter(NestedRouterMixin,SimpleRouter):
-    pass
+router.register('universities',UniversityViewSet,basename='universities')
+router.register('years',YearViewSet,basename='years')
+router.register('students',StudentViewSet,basename='students')
+router.register('users',UserViewSet,basename='users')
 
-router = NestedSimpleRouter()
+universities_router = NestedSimpleRouter(router,r'universities',lookup='university')
+universities_router.register(r'departments', DepartmentViewSet,basename='departments')
 
-years_router = router.register('years',YearViewSet)
-years_router.register('fields_of_study',FieldOfStudyViewSet,basename='years-fields_of_study',parents_query_lookups=['year']).register\
-    ('subjects',SubjectViewSet,basename='years-fields_of_study-subjects',parents_query_lookups=['field_of_study__year','field_of_study'])
+years_router = NestedSimpleRouter(router,r'years',lookup='year')
+years_router.register(r'fields_of_study',FieldOfStudyViewSet,basename='fields_of_study')
 
-subjects_router=router.register('subjects',SubjectViewSet)
+fields_of_study_router=NestedSimpleRouter(years_router,r'fields_of_study',lookup='field_of_study')
+fields_of_study_router.register(r'students',StudentViewSet,basename='students')
+fields_of_study_router.register(r'subjects',SubjectViewSet,basename='subjects')
 
-users_router=router.register('users',UserViewSet)
-users_router.register('points',PointsViewSet,basename='students-points',parents_query_lookups=['student'])
-users_router.register('applications',ApplicationViewSet,basename='students-applications',parents_query_lookups=['student'])
+subjects_router=NestedSimpleRouter(fields_of_study_router,r'subjects',lookup='subject')
+subjects_router.register(r'subjects_student_list',SubjectGroupViewSet,basename='subjects_student_list')
 
-urlpatterns=router.urls
+students_router=NestedSimpleRouter(router,r'students',lookup='student')
+students_router.register('points',PointsViewSet,basename='points')
+students_router.register('applications',ApplicationViewSet,basename='applications')
+students_router.register('subjects',SubjectViewSet,basename='subjects')
+
+urlpatterns = (
+    url(r'^', include(router.urls)),
+    url(r'^', include(universities_router.urls)),
+    url(r'^', include(years_router.urls)),
+    url(r'^', include(fields_of_study_router.urls)),
+    url(r'^', include(subjects_router.urls)),
+    url(r'^', include(students_router.urls)),
+)

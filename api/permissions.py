@@ -1,26 +1,52 @@
 
 from rest_framework import permissions
 
-from api.models import User
+from api.models import User, Department
 
-class IsDeansOfficeUser(permissions.BasePermission):
+
+class IsUniversityAdmin(permissions.BasePermission):
 
     def has_permission(self, request, view):
-        if str(request.user.groups) == 'deans_office':
+        if str(request.user.groups) == 'university_admin':
             return True
         return False
 
-class IsAdminUser(permissions.BasePermission):
+class IsDepartmentAdmin(permissions.BasePermission):
 
     def has_permission(self, request, view):
-        if str(request.user.groups) == 'admin':
+        if str(request.user.groups) == 'department_admin':
             return True
         return False
 
-class HasPKAsObjectsFK(permissions.BasePermission):
+class IsStudent(permissions.BasePermission):
 
     def has_permission(self, request, view):
-        user = User.objects.get(pk=view.kwargs['pk'])
-        if request.user == user:
+        if str(request.user.groups) == 'student':
             return True
+        return False
+
+class IsFromThisUniversity(permissions.BasePermission):
+
+    def has_object_permission(self, request, view, obj):
+        if request.user.university_id == obj.id:
+            return True
+        return False
+
+class IsFromThisDepartment(permissions.BasePermission):
+
+    def has_object_permission(self, request, view, obj):
+        if request.user.department_id == obj.id:
+            return True
+        return False
+
+class IsAccountOwner(permissions.BasePermission):
+
+    def has_object_permission(self, request, view, obj):
+        if request.user.id==obj.id:
+            return True
+        return False
+
+class AllowNoOne(permissions.BasePermission):
+
+    def has_permission(self, request, view):
         return False
